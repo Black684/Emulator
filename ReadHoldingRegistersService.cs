@@ -7,13 +7,13 @@ using global::NModbus.Data;
 using global::NModbus.Device;
 using global::NModbus.Message;
 using global::NModbus;
-using NModbus.Data;
-using NModbus.Message;
 
 namespace Emulator
 {
     public class ReadHoldingRegistersService : ModbusFunctionServiceBase<ReadHoldingInputRegistersRequest>
     {
+        private const int MaxEndAddress = 0x4F;
+
         public ReadHoldingRegistersService()
             : base(ModbusFunctionCodes.ReadHoldingRegisters)
         {
@@ -36,6 +36,10 @@ namespace Emulator
 
         protected override IModbusMessage Handle(ReadHoldingInputRegistersRequest request, ISlaveDataStore dataStore)
         {
+            if ((request.StartAddress + request.NumberOfPoints - 1) > MaxEndAddress)
+            {
+                throw new InvalidModbusRequestException(SlaveExceptionCodes.IllegalDataAddress);
+            }
             ushort[] registers = dataStore.HoldingRegisters.ReadPoints(request.StartAddress, request.NumberOfPoints);
 
             RegisterCollection data = new RegisterCollection(registers);

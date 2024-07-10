@@ -1,4 +1,5 @@
 ﻿using NModbus;
+using NModbus.Data;
 using NModbus.Device;
 using NModbus.Serial;
 using System;
@@ -56,9 +57,8 @@ namespace Emulator
         public Sensor()
         {
             network = modbusFactory.CreateRtuSlaveNetwork(serialPort);
-            slave = modbusFactory.CreateSlave(1);
+            slave = new ModbusSlave(1, new SlaveDataStore(), new IModbusFunctionService[] { new ReadHoldingRegistersService(), new WriteMultipleRegistersService() });
             network.AddSlave(slave);
-            slave = new ModbusSlave(
         }
         public void Connect(string portname) 
         {
