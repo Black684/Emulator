@@ -2,25 +2,15 @@
 using NModbus.Data;
 using NModbus.Device;
 using NModbus.Serial;
+using Sensors;
 using System;
 using System.Collections.Generic;
 using System.IO.Ports;
 using System.Linq;
 using System.Reactive.Linq;
 using System.Reactive.Subjects;
-using System.Security.Cryptography.X509Certificates;
-using System.Text;
-using System.Threading;
 using System.Threading.Tasks;
 using System.Windows;
-using System.Windows.Controls;
-using System.Windows.Data;
-using System.Windows.Documents;
-using System.Windows.Input;
-using System.Windows.Media;
-using System.Windows.Media.Imaging;
-using System.Windows.Navigation;
-using System.Windows.Shapes;
 
 namespace Emulator
 {
@@ -34,6 +24,20 @@ namespace Emulator
             InitializeComponent();
             serialPortProvider.PortsNamesChanged.StartWith(serialPortProvider.PortNames).Subscribe(UpdatePortNames);
             ConnectButton.Click += ConnectButton_Click;
+            PressureButton.Click += PressureButton_Click;
+        }
+
+        private void PressureButton_Click(object sender, RoutedEventArgs e)
+        {
+            var str = Pressure.Text.Replace(".", ",");
+            if (!float.TryParse(str, out var pressure))
+            {
+                MessageBox.Show("Требуется значение типа float.");
+            }
+            else
+            {
+                sensor.SetPressure(pressure);
+            }
         }
 
         private void ConnectButton_Click(object sender, RoutedEventArgs e)
@@ -63,7 +67,7 @@ namespace Emulator
         public void Connect(string portname) 
         {
             serialPort.PortName = portname;
-            serialPort.Parity = Parity.Even;
+            serialPort.Parity = System.IO.Ports.Parity.Even;
             serialPort.StopBits = StopBits.One;
             serialPort.Open();
             slave.DataStore.HoldingRegisters.WritePoints(0x20, new ushort[] {0x1100});
@@ -75,7 +79,20 @@ namespace Emulator
             network.Dispose();
             serialPort.Dispose();
         }
+
+        public void SetPressure(float pressure)
+        {
+            ushort reg27 = 0;
+            ushort reg28 = 0;
+            var bytes = BitConverter.GetBytes(pressure);
+            reg27 = ByteManipulater.ChangeMSB(reg27, bytes[3]);
+            reg27 = ByteManipulater.ChangeLSB(reg27, bytes[2]);
+            reg28 = ByteManipulater.ChangeMSB(reg28, bytes[1]);
+            reg28 = ByteManipulater.ChangeLSB(reg28, bytes[0]);
+            slave.DataStore.HoldingRegisters.WritePoints(0x27, new ushort[] {reg27, reg28});
+        }
     }
+
     public class SerialPortProvider
     {
         public IEnumerable<string> PortNames 

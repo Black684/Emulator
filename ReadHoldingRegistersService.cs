@@ -1,9 +1,4 @@
-﻿using System;
-using System.Collections.Generic;
-using System.Linq;
-using System.Text;
-using System.Threading.Tasks;
-using global::NModbus.Data;
+﻿using global::NModbus.Data;
 using global::NModbus.Device;
 using global::NModbus.Message;
 using global::NModbus;
@@ -12,7 +7,7 @@ namespace Emulator
 {
     public class ReadHoldingRegistersService : ModbusFunctionServiceBase<ReadHoldingInputRegistersRequest>
     {
-        private const int MaxEndAddress = 0x4F;
+        public const int MaxEndAddress = 0x4F;
 
         public ReadHoldingRegistersService()
             : base(ModbusFunctionCodes.ReadHoldingRegisters)

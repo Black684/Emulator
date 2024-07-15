@@ -1,11 +1,9 @@
-﻿using System;
-using System.Collections.Generic;
-using System.Linq;
-using System.Text;
-using System.Threading.Tasks;
+﻿using System.Linq;
 using global::NModbus.Device;
 using global::NModbus.Message;
 using global::NModbus;
+using System;
+using Sensors;
 
 namespace Emulator
 {
@@ -32,14 +30,31 @@ namespace Emulator
 
         protected override IModbusMessage Handle(WriteMultipleRegistersRequest request, ISlaveDataStore dataStore)
         {
+            if ((request.StartAddress + request.NumberOfPoints - 1) > ReadHoldingRegistersService.MaxEndAddress)
+            {
+                throw new InvalidModbusRequestException(SlaveExceptionCodes.IllegalDataAddress);
+            }
+
             ushort[] registers = request.Data.ToArray();
 
-            dataStore.HoldingRegisters.WritePoints(request.StartAddress, registers);
+            var dimensionRegisterAddress = 0x01;
+            var startAddress = request.StartAddress;
+            var endAddress = request.StartAddress + request.NumberOfPoints - 1;
 
-            return new WriteMultipleRegistersResponse(
-                request.SlaveAddress,
-                request.StartAddress,
-                request.NumberOfPoints);
+            if (dimensionRegisterAddress >= startAddress && dimensionRegisterAddress <= endAddress)
+            {
+                var index = dimensionRegisterAddress - startAddress;
+                try
+                {
+                    var a = DimensionConverter.Default.Convert(ByteManipulater.GetLSB(registers[index]));
+                    dataStore.HoldingRegisters.WritePoints(request.StartAddress, registers);
+                }
+                catch 
+                {
+                    throw new InvalidModbusRequestException(SlaveExceptionCodes.IllegalDataValue);
+                }
+            }
+            return new WriteMultipleRegistersResponse(request.SlaveAddress, request.StartAddress, request.NumberOfPoints);
         }
     }
 }
