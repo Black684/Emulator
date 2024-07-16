@@ -22,9 +22,17 @@ namespace Emulator
         public MainWindow()
         {
             InitializeComponent();
+            Dimensions.ItemsSource = Enum.GetValues(typeof(Dimension));
+            Dimensions.SelectedIndex = 2;
             serialPortProvider.PortsNamesChanged.StartWith(serialPortProvider.PortNames).Subscribe(UpdatePortNames);
             ConnectButton.Click += ConnectButton_Click;
             PressureButton.Click += PressureButton_Click;
+            DimensionButton.Click += DimensionButton_Click;
+        }
+
+        private void DimensionButton_Click(object sender, RoutedEventArgs e)
+        {
+            sensor.SetDimension((Dimension)Dimensions.SelectedItem);
         }
 
         private void PressureButton_Click(object sender, RoutedEventArgs e)
@@ -90,6 +98,14 @@ namespace Emulator
             reg28 = ByteManipulater.ChangeMSB(reg28, bytes[1]);
             reg28 = ByteManipulater.ChangeLSB(reg28, bytes[0]);
             slave.DataStore.HoldingRegisters.WritePoints(0x27, new ushort[] {reg27, reg28});
+        }
+
+        public void SetDimension(Dimension dimension)
+        {
+            var points = slave.DataStore.HoldingRegisters.ReadPoints(0x01, 1);
+            var byteValue = DimensionConverter.Default.Convert(dimension);
+            var regValue = ByteManipulater.ChangeLSB(points[0], byteValue);
+            slave.DataStore.HoldingRegisters.WritePoints(0x01, new ushort[] { regValue });
         }
     }
 
